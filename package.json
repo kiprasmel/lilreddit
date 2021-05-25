@@ -1,0 +1,10 @@
+{
+	"name": "lilreddit",
+	"version": "0.0.0",
+	"main": "index.js",
+	"author": "Kipras Melnikovas <kipras@kipras.org> (https://kipras.org/)",
+	"license": "UNLICENSED",
+	"scripts": {
+		"dev": "./dev.sh"
+	}
+}

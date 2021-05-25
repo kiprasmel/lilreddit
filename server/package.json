@@ -1,0 +1,31 @@
+{
+	"name": "server",
+	"version": "0.0.0",
+	"main": "index.js",
+	"author": "Kipras Melnikovas <kipras@kipras.org> (https://kipras.org/)",
+	"license": "UNLICENSED",
+	"scripts": {
+		"start": "ts-node-dev src/index.ts",
+		"dev": "yarn start",
+		"serve": "node dist/index.js"
+	},
+	"dependencies": {
+		"@mikro-orm/cli": "^4.5.5",
+		"@mikro-orm/core": "^4.5.5",
+		"@mikro-orm/migrations": "^4.5.5",
+		"@mikro-orm/postgresql": "^4.5.5",
+		"pg": "^8.6.0"
+	},
+	"devDependencies": {
+		"@types/node": "^15.6.1",
+		"ts-node-dev": "^1.1.6",
+		"typescript": "^4.2.4"
+	},
+	"mikro-orm": {
+		"useTsNode": true,
+		"configPaths": [
+			"./src/mikro-orm.config.ts",
+			"./dist/mikro-orm.config.js"
+		]
+	}
+}
