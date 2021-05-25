@@ -1,7 +1,11 @@
+import express from "express";
+import { ApolloServer } from "apollo-server-express";
+import { buildSchema } from "type-graphql";
 import { MikroORM } from "@mikro-orm/core";
 
 import mikroOrmConfig from "./mikro-orm.config";
 import { Post } from "./entities/Post";
+import { HelloResolver } from "./resolvers/hello";
 
 const main = async (): Promise<void> => {
 	const orm = await MikroORM.init(mikroOrmConfig);
@@ -25,6 +29,24 @@ const main = async (): Promise<void> => {
 
 	const posts = await orm.em.find(Post, {});
 	console.log("posts", posts);
+
+	const app = express();
+	const port = process.env.PORT ?? 5000;
+
+	const apolloServer = new ApolloServer({
+		schema: await buildSchema({
+			resolvers: [HelloResolver],
+			validate: false,
+		}),
+	});
+
+	apolloServer.applyMiddleware({ app });
+
+	app.get("/ping", (_req, res) => res.send("pong\n"));
+
+	app.listen(port, () => {
+		console.log(`~ lilreddit server started on port \`${port}\` @ env \`${process.env.NODE_ENV}\``);
+	});
 };
 
 main().catch((e) => console.log(e));
