@@ -6,8 +6,11 @@ import { MikroORM } from "@mikro-orm/core";
 import mikroOrmConfig from "./mikro-orm.config";
 import { Post } from "./entities/Post";
 import { HelloResolver } from "./resolvers/hello";
+// eslint-disable-next-line import/no-cycle
+import { PostResolver } from "./resolvers/post";
+import { UnwrapPromise } from "./types";
 
-const main = async (): Promise<void> => {
+const main = async () => {
 	const orm = await MikroORM.init(mikroOrmConfig);
 
 	// does the migrations
@@ -33,12 +36,16 @@ const main = async (): Promise<void> => {
 	const app = express();
 	const port = process.env.PORT ?? 5000;
 
-	const apolloServer = new ApolloServer({
+	const apolloServerConfig = {
 		schema: await buildSchema({
-			resolvers: [HelloResolver],
+			resolvers: [HelloResolver, PostResolver],
 			validate: false,
 		}),
-	});
+		// give access to stuff to the resolvers
+		context: () => ({ em: orm.em }),
+	};
+
+	const apolloServer = new ApolloServer(apolloServerConfig);
 
 	apolloServer.applyMiddleware({ app });
 
@@ -47,6 +54,16 @@ const main = async (): Promise<void> => {
 	app.listen(port, () => {
 		console.log(`~ lilreddit server started on port \`${port}\` @ env \`${process.env.NODE_ENV}\``);
 	});
+
+	return {
+		// needed to dynamically create the `MyContext` type
+		apolloServerConfig,
+	};
 };
 
-main().catch((e) => console.log(e));
+const mainReturn = main();
+
+type MainReturn = UnwrapPromise<typeof mainReturn>;
+export type MyContext = ReturnType<MainReturn["apolloServerConfig"]["context"]>;
+
+mainReturn.catch((e) => console.log(e));
