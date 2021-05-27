@@ -11,7 +11,7 @@ export default {
 	type: "postgresql" as const,
 	// // uses defaults
 	user: "admin",
-	password: "admin",
+	password: "admin" /** TODO SECRET */,
 	host: "localhost",
 	debug: __DEV__,
 

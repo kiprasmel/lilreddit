@@ -8,9 +8,9 @@ services:
       - 5432:5432
     restart: unless-stopped
     environment:
-      POSTGRES_DB: lilreddit
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: lilreddit # TODO SECRET
+      POSTGRES_USER: admin # TODO SECRET
+      POSTGRES_PASSWORD: admin # TODO SECRET
     volumes:
       - lilreddit-db-data:/var/lib/postgresql/data
 
