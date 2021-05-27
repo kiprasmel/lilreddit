@@ -7,7 +7,8 @@
 	"scripts": {
 		"start": "ts-node-dev src/index.ts",
 		"dev": "yarn start",
-		"serve": "node dist/index.js"
+		"serve": "node dist/index.js",
+		"migrate": "yarn mikro-orm migration:create"
 	},
 	"dependencies": {
 		"@mikro-orm/cli": "^4.5.5",

@@ -4,6 +4,7 @@ import { MikroORM } from "@mikro-orm/core";
 
 import { __DEV__ } from "./constants";
 import { Post } from "./entities/Post";
+import { User } from "./entities/User";
 
 export default {
 	dbName: "lilreddit",
@@ -15,7 +16,7 @@ export default {
 	debug: __DEV__,
 
 	// https://mikro-orm.io/docs/defining-entities/
-	entities: [Post],
+	entities: [Post, User],
 
 	// https://mikro-orm.io/docs/migrations/
 
