@@ -8,6 +8,8 @@ import { Post } from "./entities/Post";
 import { HelloResolver } from "./resolvers/hello";
 // eslint-disable-next-line import/no-cycle
 import { PostResolver } from "./resolvers/post";
+// eslint-disable-next-line import/no-cycle
+import { UserResolver } from "./resolvers/user";
 import { UnwrapPromise } from "./types";
 
 const main = async () => {
@@ -38,7 +40,7 @@ const main = async () => {
 
 	const apolloServerConfig = {
 		schema: await buildSchema({
-			resolvers: [HelloResolver, PostResolver],
+			resolvers: [HelloResolver, PostResolver, UserResolver],
 			validate: false,
 		}),
 		// give access to stuff to the resolvers
