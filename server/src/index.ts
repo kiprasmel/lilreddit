@@ -2,6 +2,9 @@ import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { MikroORM } from "@mikro-orm/core";
+import redis from "redis";
+import session from "express-session";
+import connectRedis from "connect-redis";
 
 import mikroOrmConfig from "./mikro-orm.config";
 import { Post } from "./entities/Post";
@@ -11,6 +14,15 @@ import { PostResolver } from "./resolvers/post";
 // eslint-disable-next-line import/no-cycle
 import { UserResolver } from "./resolvers/user";
 import { UnwrapPromise } from "./types";
+import { __DEV__ } from "./constants";
+
+export type ExpressSession = Partial<{
+	userId: number;
+	loginTime: number;
+	loginIp: string;
+}>;
+
+export type Req = express.Request & { session?: ExpressSession };
 
 const main = async () => {
 	const orm = await MikroORM.init(mikroOrmConfig);
@@ -38,13 +50,60 @@ const main = async () => {
 	const app = express();
 	const port = process.env.PORT ?? 5000;
 
+	/**
+	 * TODO Nginx
+	 *
+	 * Proper IP forwarding et al
+	 *
+	 * see
+	 * - https://expressjs.com/en/4x/api.html#trust.proxy.options.table
+	 * - https://expressjs.com/en/guide/behind-proxies.html
+	 */
+	app.set("trust proxy", true);
+
+	/**
+	 * how all this works: https://youtu.be/I6ypD7qv3Z8?t=2h3m6s
+	 */
+	const RedisStore = connectRedis(session);
+	const redisClient = redis.createClient();
+	app.use(
+		session({
+			name: "lilreddit.qid",
+			store: new RedisStore({
+				client: redisClient, //
+				disableTouch: true, // https://github.com/tj/connect-redis#disabletouch
+			}),
+			cookie: {
+				maxAge: 1000 * 60 * 60 * 24 * 365 * 200, // 200 years lmao
+				httpOnly: true, // non accessible in client-side js (except elevater permissions like an extension)
+				sameSite: "lax", // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite#lax
+				secure: !__DEV__, // https-only
+			},
+			saveUninitialized: false, // do not store empty sessions
+			secret: "qKXY#&B~SVwd$33APmx@sCH9KQtFF`%Wi2CM4iHVS#YiCyG79Q7`k8$wA%MdtShB" /** TODO SECRET */,
+			resave: false,
+		})
+	);
+
 	const apolloServerConfig = {
 		schema: await buildSchema({
 			resolvers: [HelloResolver, PostResolver, UserResolver],
 			validate: false,
 		}),
 		// give access to stuff to the resolvers
-		context: () => ({ em: orm.em }),
+		context: (
+			{
+				req,
+				res,
+			}: {
+				req: Req;
+				res: express.Response;
+			} /** : ApolloServerExpressConfig["context"]  */
+		) => ({
+			em: orm.em,
+			req,
+			res,
+		}),
 	};
 
 	const apolloServer = new ApolloServer(apolloServerConfig);

@@ -2,8 +2,20 @@ import argon2 from "argon2";
 import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
 
 // eslint-disable-next-line import/no-cycle
-import { MyContext } from "..";
+import { MyContext, Req } from "..";
 import { User } from "../entities/User";
+
+/**
+ * store some fields in the `req.session`
+ * to set a cookie for the user
+ * to keep them logged in
+ */
+const logUserIn = (reqRef: Req, userId: number): void => {
+	// if (!reqRef.session) reqRef.session = {};
+	reqRef.session.userId = userId;
+	reqRef.session.loginTime = new Date().getTime();
+	reqRef.session.loginIp = reqRef.ip;
+};
 
 @Resolver()
 export class UserResolver {
@@ -11,7 +23,7 @@ export class UserResolver {
 	async registerUser(
 		@Arg("username") username: string,
 		@Arg("password") rawPassword: string,
-		@Ctx() { em }: MyContext
+		@Ctx() { em, req }: MyContext
 	): Promise<User | null> {
 		try {
 			const hasMissingParams: boolean = !username?.length || !rawPassword?.length;
@@ -31,6 +43,7 @@ export class UserResolver {
 			const user = em.create(User, { username: username.toLowerCase(), password: oneWayHashedAndSaltedPassword });
 			await em.persistAndFlush(user);
 
+			logUserIn(req, user.id);
 			return user;
 		} catch (e) {
 			return null;
@@ -41,7 +54,7 @@ export class UserResolver {
 	async loginUser(
 		@Arg("username") username: string,
 		@Arg("password") rawPassword: string,
-		@Ctx() { em }: MyContext
+		@Ctx() { em, req }: MyContext
 	): Promise<User | null> {
 		try {
 			const user = await em.findOne(User, { username: username.toLowerCase() });
@@ -58,6 +71,7 @@ export class UserResolver {
 			const doPasswordsMatch: boolean = await argon2.verify(user.password, rawPassword);
 
 			if (doPasswordsMatch) {
+				logUserIn(req, user.id);
 				return user;
 			} else {
 				return null;
@@ -71,5 +85,15 @@ export class UserResolver {
 	@Query(() => [User])
 	async users(@Ctx() { em }: MyContext): Promise<User[]> {
 		return await em.find(User, {});
+	}
+
+	@Query(() => User, { nullable: true })
+	async me(@Ctx() { em, req }: MyContext): Promise<User | null> {
+		const { userId } = req?.session ?? { userId: null };
+
+		if (!userId) return null;
+
+		const me: User | null = await em.findOne(User, { id: userId });
+		return me;
 	}
 }
