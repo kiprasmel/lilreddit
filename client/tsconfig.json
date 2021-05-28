@@ -16,7 +16,13 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "esnext"
+    "target": "esnext",
+	"noImplicitAny": true,
+	"strictNullChecks": true,
+	"strictFunctionTypes": true,
+	"noImplicitThis": true,
+	"noImplicitReturns": true,
+	"allowSyntheticDefaultImports": true,
   },
   "exclude": ["node_modules"],
   "include": ["**/*.ts", "**/*.tsx"]
