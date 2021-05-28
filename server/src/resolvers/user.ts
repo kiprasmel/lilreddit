@@ -40,6 +40,29 @@ export class UserResolver {
 			// https://github.com/ranisalt/node-argon2/wiki/Options
 			const oneWayHashedAndSaltedPassword: string = await argon2.hash(rawPassword);
 
+			/**
+			 * example on how to use a query builder,
+			 * though the instructor is over-complicating things here
+			 * instead of just checking if the user already exists
+			 */
+
+			/*
+
+			import { EntityManager  } from "@mikro-orm/postgresql"; // correct types for `em.createQueryBuilder` et al 
+
+			const [user] = await (em as EntityManager)
+				.createQueryBuilder(User)
+				.getKnexQuery()
+				.insert({
+					username,
+					password: oneWayHashedAndSaltedPassword,
+					created_at: new Date().getTime(),
+					updated_at: new Date().getTime(),
+				})
+				.returning("*");
+
+			 */
+
 			const user = em.create(User, { username: username.toLowerCase(), password: oneWayHashedAndSaltedPassword });
 			await em.persistAndFlush(user);
 
