@@ -5,6 +5,7 @@ import { MikroORM } from "@mikro-orm/core";
 import redis from "redis";
 import session from "express-session";
 import connectRedis from "connect-redis";
+import cors from "cors";
 
 import mikroOrmConfig from "./mikro-orm.config";
 import { Post } from "./entities/Post";
@@ -61,6 +62,13 @@ const main = async () => {
 	 */
 	app.set("trust proxy", true);
 
+	app.use(
+		cors({
+			origin: "http://localhost:3000",
+			credentials: true,
+		})
+	);
+
 	/**
 	 * how all this works: https://youtu.be/I6ypD7qv3Z8?t=2h3m6s
 	 */
@@ -108,7 +116,10 @@ const main = async () => {
 
 	const apolloServer = new ApolloServer(apolloServerConfig);
 
-	apolloServer.applyMiddleware({ app });
+	apolloServer.applyMiddleware({
+		app,
+		cors: false /** { origin: "http://localhost:3000" } */ /** handling via express instead */,
+	});
 
 	app.get("/ping", (_req, res) => res.send("pong\n"));
 
