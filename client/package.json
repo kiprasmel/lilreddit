@@ -1,28 +1,39 @@
 {
-  "name": "with-chakra-ui-typescript",
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "next",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "@chakra-ui/icons": "^1.0.5",
-    "@chakra-ui/react": "^1.4.2",
-    "@chakra-ui/theme-tools": "1.1.2",
-    "@emotion/react": "11.1.5",
-    "@emotion/styled": "11.1.5",
-    "formik": "^2.2.8",
-    "framer-motion": "^4.0.3",
-    "next": "latest",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
-  },
-  "devDependencies": {
-    "@types/node": "^14.6.0",
-    "@types/react": "^17.0.3",
-    "@types/react-dom": "^17.0.3",
-    "typescript": "4.2.3"
-  },
-  "license": "MIT"
+	"name": "with-chakra-ui-typescript",
+	"version": "1.0.0",
+	"scripts": {
+		"dev": "next",
+		"build": "next build",
+		"start": "next start",
+		"esl": "eslint --ext js,jsx,ts,tsx",
+		"lint": "yarn esl .",
+		"lint:fix": "yarn lint --fix",
+		"gen": "graphql-codegen --config codegen.yml",
+		"postgen": "yarn esl --fix ./src/generated/"
+	},
+	"dependencies": {
+		"@chakra-ui/icons": "^1.0.5",
+		"@chakra-ui/react": "^1.4.2",
+		"@chakra-ui/theme-tools": "1.1.2",
+		"@emotion/react": "11.1.5",
+		"@emotion/styled": "11.1.5",
+		"formik": "^2.2.8",
+		"framer-motion": "^4.0.3",
+		"graphql": "^15.5.0",
+		"next": "latest",
+		"react": "^17.0.2",
+		"react-dom": "^17.0.2",
+		"urql": "^2.0.3"
+	},
+	"devDependencies": {
+		"@graphql-codegen/cli": "1.21.5",
+		"@graphql-codegen/typescript": "1.22.1",
+		"@graphql-codegen/typescript-operations": "1.18.0",
+		"@graphql-codegen/typescript-urql": "^2.0.7",
+		"@types/node": "^14.6.0",
+		"@types/react": "^17.0.3",
+		"@types/react-dom": "^17.0.3",
+		"typescript": "4.2.3"
+	},
+	"license": "MIT"
 }

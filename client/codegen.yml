@@ -1,0 +1,19 @@
+# https://graphql-code-generator.com
+
+overwrite: true
+schema: "http://localhost:5000/graphql"
+documents: "src/graphql/**/*.graphql"
+generates:
+  src/generated/graphql.tsx:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-urql"
+      # - "typescript-react-apollo"
+      # - "typescript-graphql-files-modules"
+      # - "typescript-document-nodes"
+      # - "fragment-matcher"
+      # - "urql-introspection"
+  # ./graphql.schema.json:
+    # plugins:
+      # - "introspection"
