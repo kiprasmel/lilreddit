@@ -5,6 +5,14 @@
 	"author": "Kipras Melnikovas <kipras@kipras.org> (https://kipras.org/)",
 	"license": "UNLICENSED",
 	"scripts": {
-		"dev": "./dev.sh"
+		"run:containers": "cd server/ && docker-compose up -d && cd ../",
+		"run:server": "yarn --cwd server/ dev",
+		"run:client": "yarn --cwd client/ dev",
+		"run:projects": "concurrently --raw --kill-others --names \"1: server,2: client\" \"yarn run:server\" \"yarn run:client\"",
+		"dev": "yarn run:containers && yarn run:projects",
+		"db": "bash ./db.sh"
+	},
+	"devDependencies": {
+		"concurrently": "^6.2.0"
 	}
 }
