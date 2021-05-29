@@ -1,13 +1,17 @@
-import React, { FC } from "react";
+import React, { FC /* useState */ } from "react";
 import NextLink from "next/link";
 
 import { Box, Button, Flex, HStack, Link } from "@chakra-ui/react";
-import { useMeQuery } from "../generated/graphql";
+import { useLogoutMutation, useMeQuery } from "../generated/graphql";
+// import { createDelayer } from "../utils/time";
 
 interface NavbarProps {}
 
 export const Navbar: FC<NavbarProps> = ({}) => {
 	const [{ data, fetching }] = useMeQuery();
+
+	const [{ fetching: isFetchingLogout }, logout] = useLogoutMutation();
+	// const [hasFinishedLogout, setHasFinishedLogout] = useState(true);
 
 	let status: "initial" | "fetching" | "logged-out" | "logged-in" = "initial";
 
@@ -38,11 +42,29 @@ export const Navbar: FC<NavbarProps> = ({}) => {
 				<Box>{data?.me?.username}</Box>
 				<Button
 					variant="link"
-					onClick={() => {
-						//
+					onClick={async (): Promise<void> => {
+						/**
+						 * couldn't get the delayer to work
+						 * since the cache invalidation via `cacheExchange`
+						 * fires off immediately and changes the layout
+						 * and I cannot provide a callback that would allow
+						 * invalidating after it resolves,
+						 * so we'll just not bother with this
+						 *
+						 */
 
-						throw new Error("TODO");
+						// const { delayIfNotEnoughTimePassedFromStartAsync } = createDelayer();
+						// setHasFinishedLogout(false);
+						// await logout({
+						// 	__delayerCb: async () => {
+						// 		await delayIfNotEnoughTimePassedFromStartAsync(700);
+						// 		setHasFinishedLogout(true);
+						// 	},
+						// } as any);
+
+						await logout();
 					}}
+					isLoading={isFetchingLogout /* || !hasFinishedLogout */}
 				>
 					logout
 				</Button>

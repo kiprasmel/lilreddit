@@ -3,6 +3,7 @@ import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
 
 // eslint-disable-next-line import/no-cycle
 import { MyContext, Req } from "..";
+import { Cookies } from "../constants";
 import { User } from "../entities/User";
 
 /**
@@ -103,6 +104,29 @@ export class UserResolver {
 			// internal failure
 			return null;
 		}
+	}
+
+	@Mutation(() => Boolean)
+	async logoutUser(@Ctx() { req, res }: MyContext): Promise<boolean> {
+		return new Promise((resolve) => {
+			try {
+				res.clearCookie(Cookies.Session);
+
+				req.session.destroy((err) => {
+					if (err) {
+						/**
+						 * internal; if the `res.clearCookie` worked, it does not matter,
+						 * thus do not `resolve(false)` here
+						 */
+						console.error(`Failed to destroy session @ logoutUser, err:`, err);
+					}
+				});
+
+				resolve(true);
+			} catch (err) {
+				resolve(false);
+			}
+		});
 	}
 
 	@Query(() => [User])

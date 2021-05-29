@@ -49,6 +49,14 @@ const urqlClient = createClient({
 							}
 						});
 					},
+					logoutUser: (_result, _args, cache, _info): void => {
+						// // cache.invalidate();
+						// console.log("args", _result, args, cache, _info);
+						// const { __delayerCb } = args as any;
+						// __delayerCb().then(() => cache.updateQuery({ query: MeDocument }, () => ({ me: null })));
+
+						cache.updateQuery({ query: MeDocument }, () => ({ me: null }));
+					},
 				},
 			},
 		}),

@@ -15,7 +15,7 @@ import { PostResolver } from "./resolvers/post";
 // eslint-disable-next-line import/no-cycle
 import { UserResolver } from "./resolvers/user";
 import { UnwrapPromise } from "./types";
-import { __DEV__ } from "./constants";
+import { Cookies, __DEV__ } from "./constants";
 
 export type ExpressSession = Partial<{
 	userId: number;
@@ -76,7 +76,7 @@ const main = async () => {
 	const redisClient = redis.createClient();
 	app.use(
 		session({
-			name: "lilreddit.qid",
+			name: Cookies.Session,
 			store: new RedisStore({
 				client: redisClient, //
 				disableTouch: true, // https://github.com/tj/connect-redis#disabletouch
