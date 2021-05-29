@@ -81,13 +81,15 @@ export type User = {
 	username: Scalars["String"];
 };
 
+export type BaseUserFragment = { __typename?: "User" } & Pick<User, "id" | "username" | "createdAt">;
+
 export type LoginMutationVariables = Exact<{
 	username: Scalars["String"];
 	password: Scalars["String"];
 }>;
 
 export type LoginMutation = { __typename?: "Mutation" } & {
-	loginUser?: Maybe<{ __typename?: "User" } & Pick<User, "id" | "username" | "createdAt">>;
+	loginUser?: Maybe<{ __typename?: "User" } & BaseUserFragment>;
 };
 
 export type RegisterMutationVariables = Exact<{
@@ -96,23 +98,27 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 export type RegisterMutation = { __typename?: "Mutation" } & {
-	registerUser?: Maybe<{ __typename?: "User" } & Pick<User, "id" | "username" | "createdAt">>;
+	registerUser?: Maybe<{ __typename?: "User" } & BaseUserFragment>;
 };
 
 export type MeQueryVariables = Exact<{ [key: string]: never }>;
 
-export type MeQuery = { __typename?: "Query" } & {
-	me?: Maybe<{ __typename?: "User" } & Pick<User, "id" | "username">>;
-};
+export type MeQuery = { __typename?: "Query" } & { me?: Maybe<{ __typename?: "User" } & BaseUserFragment> };
 
+export const BaseUserFragmentDoc = gql`
+	fragment BaseUser on User {
+		id
+		username
+		createdAt
+	}
+`;
 export const LoginDocument = gql`
 	mutation Login($username: String!, $password: String!) {
 		loginUser(username: $username, password: $password) {
-			id
-			username
-			createdAt
+			...BaseUser
 		}
 	}
+	${BaseUserFragmentDoc}
 `;
 
 export function useLoginMutation() {
@@ -121,11 +127,10 @@ export function useLoginMutation() {
 export const RegisterDocument = gql`
 	mutation Register($username: String!, $password: String!) {
 		registerUser(username: $username, password: $password) {
-			id
-			username
-			createdAt
+			...BaseUser
 		}
 	}
+	${BaseUserFragmentDoc}
 `;
 
 export function useRegisterMutation() {
@@ -134,10 +139,10 @@ export function useRegisterMutation() {
 export const MeDocument = gql`
 	query Me {
 		me {
-			id
-			username
+			...BaseUser
 		}
 	}
+	${BaseUserFragmentDoc}
 `;
 
 export function useMeQuery(options: Omit<Urql.UseQueryArgs<MeQueryVariables>, "query"> = {}) {
