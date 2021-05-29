@@ -8,6 +8,10 @@ import { EntityBase } from "./EntityBase";
 export class User extends EntityBase {
 	@Field(() => String)
 	@Property({ type: "text", unique: true })
+	email!: string;
+
+	@Field(() => String)
+	@Property({ type: "text", unique: true })
 	username!: string;
 
 	@Property({ type: "text" })

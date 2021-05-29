@@ -26,7 +26,7 @@ const Login: FC<LoginProps> = () => {
 	return (
 		<Wrapper variant="small">
 			<Formik
-				initialValues={{ username: "", password: "" }}
+				initialValues={{ emailOrUsername: "", password: "" }}
 				onSubmit={async (values): Promise<void> => {
 					const { delayIfNotEnoughTimePassedFromStartAsync } = createDelayer();
 
@@ -47,8 +47,8 @@ const Login: FC<LoginProps> = () => {
 					<Form>
 						<Stack spacing={6}>
 							<InputField
-								name="username" //
-								label="Username"
+								name="emailOrUsername" //
+								label="Email Or Username"
 								/**
 								 * not using `onChange` because it overrides the value handling logic
 								 * and makes the input useless lmao

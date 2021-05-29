@@ -24,6 +24,7 @@ export type Mutation = {
 	registerUser?: Maybe<User>;
 	loginUser?: Maybe<User>;
 	logoutUser: Scalars["Boolean"];
+	resetPassword: Scalars["Boolean"];
 };
 
 export type MutationCreatePostArgs = {
@@ -46,11 +47,12 @@ export type MutationDeletePostV2Args = {
 export type MutationRegisterUserArgs = {
 	password: Scalars["String"];
 	username: Scalars["String"];
+	email: Scalars["String"];
 };
 
 export type MutationLoginUserArgs = {
 	password: Scalars["String"];
-	username: Scalars["String"];
+	emailOrUsername: Scalars["String"];
 };
 
 export type Post = {
@@ -79,13 +81,14 @@ export type User = {
 	id: Scalars["Float"];
 	createdAt: Scalars["String"];
 	updatedAt: Scalars["String"];
+	email: Scalars["String"];
 	username: Scalars["String"];
 };
 
 export type BaseUserFragment = { __typename?: "User" } & Pick<User, "id" | "username" | "createdAt">;
 
 export type LoginMutationVariables = Exact<{
-	username: Scalars["String"];
+	emailOrUsername: Scalars["String"];
 	password: Scalars["String"];
 }>;
 
@@ -98,6 +101,7 @@ export type LogoutMutationVariables = Exact<{ [key: string]: never }>;
 export type LogoutMutation = { __typename?: "Mutation" } & Pick<Mutation, "logoutUser">;
 
 export type RegisterMutationVariables = Exact<{
+	email: Scalars["String"];
 	username: Scalars["String"];
 	password: Scalars["String"];
 }>;
@@ -124,8 +128,8 @@ export const BaseUserFragmentDoc = gql`
 	}
 `;
 export const LoginDocument = gql`
-	mutation Login($username: String!, $password: String!) {
-		loginUser(username: $username, password: $password) {
+	mutation Login($emailOrUsername: String!, $password: String!) {
+		loginUser(emailOrUsername: $emailOrUsername, password: $password) {
 			...BaseUser
 		}
 	}
@@ -145,8 +149,8 @@ export function useLogoutMutation() {
 	return Urql.useMutation<LogoutMutation, LogoutMutationVariables>(LogoutDocument);
 }
 export const RegisterDocument = gql`
-	mutation Register($username: String!, $password: String!) {
-		registerUser(username: $username, password: $password) {
+	mutation Register($email: String!, $username: String!, $password: String!) {
+		registerUser(email: $email, username: $username, password: $password) {
 			...BaseUser
 		}
 	}

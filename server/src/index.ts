@@ -16,6 +16,7 @@ import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 import { UnwrapPromise } from "./types";
 import { Cookies, __DEV__ } from "./constants";
+import { sendEmail } from "./utils/sendEmail";
 
 export type ExpressSession = Partial<{
 	userId: number;
@@ -26,10 +27,12 @@ export type ExpressSession = Partial<{
 export type Req = express.Request & { session?: ExpressSession };
 
 const main = async () => {
+	sendEmail({ to: "kipras@kipras.org", subject: "oh hi mark", text: "lilreddit started lmao" });
+
 	const orm = await MikroORM.init(mikroOrmConfig);
 
 	// does the migrations
-	orm.getMigrator().up();
+	await orm.getMigrator().up();
 
 	// em - Entity Manager
 

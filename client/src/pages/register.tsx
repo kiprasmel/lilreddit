@@ -26,7 +26,7 @@ const Register: FC<RegisterProps> = ({}) => {
 	return (
 		<Wrapper variant="small">
 			<Formik
-				initialValues={{ username: "", password: "" }}
+				initialValues={{ email: "", username: "", password: "" }}
 				onSubmit={async (values): Promise<void> => {
 					const { delayIfNotEnoughTimePassedFromStartAsync } = createDelayer();
 
@@ -46,6 +46,16 @@ const Register: FC<RegisterProps> = ({}) => {
 				{({ isSubmitting }) => (
 					<Form>
 						<Stack spacing={6}>
+							<InputField
+								name="email" //
+								label="Email"
+								type="email"
+								/**
+								 * not using `onChange` because it overrides the value handling logic
+								 * and makes the input useless lmao
+								 */
+								onChangeCapture={() => setHasErrored(false)}
+							/>
 							<InputField
 								name="username" //
 								label="Username"

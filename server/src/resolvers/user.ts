@@ -1,6 +1,8 @@
 import argon2 from "argon2";
 import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
 
+import { sendEmail } from "../utils/sendEmail";
+
 // eslint-disable-next-line import/no-cycle
 import { MyContext, Req } from "..";
 import { Cookies } from "../constants";
@@ -22,17 +24,23 @@ const logUserIn = (reqRef: Req, userId: number): void => {
 export class UserResolver {
 	@Mutation(() => User, { nullable: true })
 	async registerUser(
+		@Arg("email") email: string,
 		@Arg("username") username: string,
 		@Arg("password") rawPassword: string,
 		@Ctx() { em, req }: MyContext
 	): Promise<User | null> {
 		try {
-			const hasMissingParams: boolean = !username?.length || !rawPassword?.length;
+			const hasMissingParams: boolean = !email?.length || !username?.length || !rawPassword?.length;
 			if (hasMissingParams) {
 				return null;
 			}
 
-			const doesAlreadyExist: boolean = !!(await em.findOne(User, { username }));
+			// eslint-disable-next-line no-param-reassign
+			email = email.toLowerCase();
+			// eslint-disable-next-line no-param-reassign
+			username = username.toLowerCase();
+
+			const doesAlreadyExist: boolean = !!(await em.findOne(User, { $or: [{ username }, { email }] }));
 			if (doesAlreadyExist) {
 				return null;
 			}
@@ -64,7 +72,7 @@ export class UserResolver {
 
 			 */
 
-			const user = em.create(User, { username: username.toLowerCase(), password: oneWayHashedAndSaltedPassword });
+			const user = em.create(User, { email, username, password: oneWayHashedAndSaltedPassword });
 			await em.persistAndFlush(user);
 
 			logUserIn(req, user.id);
@@ -76,12 +84,15 @@ export class UserResolver {
 
 	@Mutation(() => User, { nullable: true })
 	async loginUser(
-		@Arg("username") username: string,
+		@Arg("emailOrUsername") emailOrUsername: string,
 		@Arg("password") rawPassword: string,
 		@Ctx() { em, req }: MyContext
 	): Promise<User | null> {
 		try {
-			const user = await em.findOne(User, { username: username.toLowerCase() });
+			// eslint-disable-next-line no-param-reassign
+			emailOrUsername = emailOrUsername.toLowerCase();
+
+			const user = await em.findOne(User, { $or: [{ email: emailOrUsername }, { username: emailOrUsername }] });
 
 			if (!user) {
 				return null;
@@ -127,6 +138,28 @@ export class UserResolver {
 				resolve(false);
 			}
 		});
+	}
+
+	@Mutation(() => Boolean)
+	async resetPassword(@Arg("emailOrUsername") emailOrUsername: string, @Ctx() { em }: MyContext) {
+		const user = await em.findOne(User, { $or: [{ email: emailOrUsername }, { username: emailOrUsername }] });
+
+		if (!user) {
+			/** security - always return true anyway */
+			return true;
+		}
+
+		const token: string = "TODO-actual-token";
+
+		const resetLink: string = `http://localhost:3000/reset-password/${token}`;
+
+		sendEmail({
+			to: user.email,
+			text: resetLink,
+			html: `<a href="${resetLink}">Reset Password</a>`,
+		});
+
+		return true;
 	}
 
 	@Query(() => [User])
