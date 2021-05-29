@@ -1,14 +1,15 @@
 import React, { FC /* useState */ } from "react";
 import NextLink from "next/link";
-
 import { Box, Button, Flex, HStack, Link } from "@chakra-ui/react";
+
 import { useLogoutMutation, useMeQuery } from "../generated/graphql";
+import { isNextServer } from "../utils/isNextServer";
 // import { createDelayer } from "../utils/time";
 
 interface NavbarProps {}
 
 export const Navbar: FC<NavbarProps> = ({}) => {
-	const [{ data, fetching }] = useMeQuery();
+	const [{ data, fetching }] = useMeQuery({ pause: isNextServer() });
 
 	const [{ fetching: isFetchingLogout }, logout] = useLogoutMutation();
 	// const [hasFinishedLogout, setHasFinishedLogout] = useState(true);

@@ -1,5 +1,6 @@
 import React, { FC, useState } from "react";
 import { useRouter } from "next/router";
+import { withUrqlClient } from "next-urql";
 import { Form, Formik } from "formik";
 import { Alert, AlertIcon, AlertTitle, Button, Stack } from "@chakra-ui/react";
 
@@ -7,6 +8,7 @@ import { Wrapper } from "../components/Wrapper";
 import { InputField } from "../components/InputField";
 import { useRegisterMutation } from "../generated/graphql";
 import { createDelayer } from "../utils/time";
+import { createUrqlClient } from "../utils/createUrqlClient";
 
 interface RegisterProps {}
 
@@ -84,4 +86,4 @@ const Register: FC<RegisterProps> = ({}) => {
 	);
 };
 
-export default Register;
+export default withUrqlClient(createUrqlClient)(Register);
