@@ -2,7 +2,7 @@ import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { MikroORM } from "@mikro-orm/core";
-import redis from "redis";
+import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import cors from "cors";
@@ -76,12 +76,12 @@ const main = async () => {
 	 * how all this works: https://youtu.be/I6ypD7qv3Z8?t=2h3m6s
 	 */
 	const RedisStore = connectRedis(session);
-	const redisClient = redis.createClient();
+	const redis = new Redis();
 	app.use(
 		session({
 			name: Cookies.Session,
 			store: new RedisStore({
-				client: redisClient, //
+				client: redis, //
 				disableTouch: true, // https://github.com/tj/connect-redis#disabletouch
 			}),
 			cookie: {
@@ -114,6 +114,7 @@ const main = async () => {
 			em: orm.em,
 			req,
 			res,
+			redis,
 		}),
 	};
 
