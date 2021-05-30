@@ -1,12 +1,12 @@
 import argon2 from "argon2";
 import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
-import { v4 as uuidv4 } from "uuid";
+import jwt from "jsonwebtoken";
 
 import { sendEmail } from "../utils/sendEmail";
-
 // eslint-disable-next-line import/no-cycle
 import { MyContext, Req } from "..";
-import { Cookies, Redis } from "../constants";
+import { Cookies, JWTSecret, Redis } from "../constants";
+import { JWTTokenPayload } from "../types";
 import { User } from "../entities/User";
 
 /**
@@ -163,18 +163,42 @@ export class UserResolver {
 			return false;
 		}
 
-		const token: string = uuidv4();
-
 		const howManyMinutesTillExpiration: number = 30;
 		const expiresInMs: number = 1000 * 60 * howManyMinutesTillExpiration;
-		const expirationTimeUnix: number = new Date().getTime() + expiresInMs;
+		const expirationTimeUnix: number = Date.now() + expiresInMs;
 
-		const changePasswordPage: string = `http://localhost:3000/change-password/${token}/${expirationTimeUnix}?emailOrUsername=${emailOrUsername}`;
+		const tokenPayload: JWTTokenPayload = {
+			userId: user.id,
+			reqIp: req.ip,
+			emailOrUsername: emailOrUsername,
+			expirationTimeUnix: expirationTimeUnix,
+		};
+
+		const jwtOptions: jwt.SignOptions = {
+			algorithm: "HS512",
+			/**
+			 * do not use the built-in `expiresIn` method
+			 * since it would fail verification if the token has expired,
+			 * even though we are fine with an expired token --
+			 * we track that ourselves,
+			 * all that matters is if it is valid or not
+			 *
+			 * previously:
+			 * ```ts
+			 *  expiresIn: Math.floor(expiresInMs / 1000),
+			 * ```
+			 *
+			 */
+		};
+
+		const signedJwtToken: string = jwt.sign(tokenPayload, JWTSecret, jwtOptions);
+
+		const changePasswordPage: string = `http://localhost:3000/change-password?token=${signedJwtToken}`;
 
 		// https://redis.io/commands/set
 		await redis.set(
-			Redis.ResetPasswordTokenKey(token), //
-			[user.id, req.ip].join(Redis.ValueSeparator),
+			Redis.ResetPasswordTokenKey(signedJwtToken), //
+			user.id,
 			"PX",
 			expiresInMs
 		);
@@ -201,8 +225,16 @@ export class UserResolver {
 			return null;
 		}
 
-		const [userId_, reqIp] = value.split(Redis.ValueSeparator);
-		const userId: number = Number(userId_);
+		const userId: number = Number(value);
+
+		let jwtTokenPayload: JWTTokenPayload;
+		try {
+			jwtTokenPayload = jwt.verify(token, JWTSecret) as JWTTokenPayload;
+		} catch (e) {
+			return null;
+		}
+
+		const { reqIp } = jwtTokenPayload;
 
 		if (req.ip !== reqIp) {
 			return null;

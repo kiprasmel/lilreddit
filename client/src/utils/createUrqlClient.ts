@@ -1,10 +1,11 @@
 import { cacheExchange } from "@urql/exchange-graphcache";
 import { dedupExchange, fetchExchange } from "urql";
 
+import { APIGraphQLEndpoint } from "../constants";
 import { LoginMutation, MeDocument, MeQuery, RegisterMutation } from "../generated/graphql";
 
 export const createUrqlClient = (ssrExchange) => ({
-	url: "http://localhost:5000/graphql",
+	url: APIGraphQLEndpoint,
 	fetchOptions: {
 		credentials: "include" as const,
 	},

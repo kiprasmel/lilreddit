@@ -6,6 +6,7 @@ import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import cors from "cors";
+import jwt from "jsonwebtoken";
 
 import mikroOrmConfig from "./mikro-orm.config";
 import { Post } from "./entities/Post";
@@ -14,8 +15,8 @@ import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 // eslint-disable-next-line import/no-cycle
 import { UserResolver } from "./resolvers/user";
-import { UnwrapPromise } from "./types";
-import { Cookies, __DEV__ } from "./constants";
+import { IsTokenValidResponse, JWTTokenPayload, UnwrapPromise } from "./types";
+import { Cookies, JWTSecret, __DEV__ } from "./constants";
 import { sendEmail } from "./utils/sendEmail";
 
 export type ExpressSession = Partial<{
@@ -126,6 +127,58 @@ const main = async () => {
 	});
 
 	app.get("/ping", (_req, res) => res.send("pong\n"));
+
+	/**
+	 * this verification is used inside `getServerSideProps`
+	 * and it'd be annoying to use graphql for it,
+	 *
+	 * since it'd be outside of react-land, thus the `useMutation`/`useQuery`
+	 * hooks wouldn't work and you'd need to initiate a separate client etc etc,
+	 * thus we're creating an endpoint here.
+	 */
+	app.get("/is-token-valid/of-password-reset/:token", (req, res) => {
+		const { token } = req.params;
+
+		const send = (code: number, data: IsTokenValidResponse): void => {
+			res.status(code).json(data);
+		};
+
+		if (!token) {
+			send(400, {
+				valid: false,
+				reason: "Token not provided in query",
+				isExpiredAtTimeOfValidation: null,
+				tokenPayload: null,
+			});
+
+			return;
+		}
+
+		jwt.verify(token, JWTSecret, (err, verified_) => {
+			if (err) {
+				send(200, {
+					valid: false,
+					reason: "Token is not valid",
+					isExpiredAtTimeOfValidation: null,
+					tokenPayload: null,
+				});
+
+				return;
+			}
+
+			const verified: JWTTokenPayload = verified_ as JWTTokenPayload;
+			const isExpiredAtTimeOfValidation: boolean = Date.now() > verified.expirationTimeUnix;
+
+			send(200, {
+				valid: true,
+				reason: "Token is valid",
+				isExpiredAtTimeOfValidation: isExpiredAtTimeOfValidation,
+				tokenPayload: verified,
+			});
+
+			return;
+		});
+	});
 
 	app.listen(port, () => {
 		console.log(`~ lilreddit server started on port \`${port}\` @ env \`${process.env.NODE_ENV}\``);
