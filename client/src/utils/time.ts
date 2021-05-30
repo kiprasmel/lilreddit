@@ -1,14 +1,7 @@
 import { delay } from "./delay";
 
-export const timeDelta = (startTimeUnix: number, endTimeUnix: number = new Date().getTime()): number => {
-	if (endTimeUnix < startTimeUnix) {
-		throw new Error(
-			`mismatched \`startTimeUnix\` and \`endTimeUnix\` argument placement order (endTime is currently earlier than start time)`
-		);
-	}
-
-	return endTimeUnix - startTimeUnix;
-};
+export const timeDelta = (startTimeUnix: number, endTimeUnix: number = new Date().getTime()): number =>
+	endTimeUnix - startTimeUnix;
 
 export const calcRemainingWaitMs = (
 	minimumWaitMs: number,

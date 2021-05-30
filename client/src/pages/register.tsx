@@ -37,7 +37,7 @@ const Register: FC<RegisterProps> = ({}) => {
 						const minDelayFromStartMs: number = 500;
 						await delayIfNotEnoughTimePassedFromStartAsync(minDelayFromStartMs);
 
-						router.push("/");
+						await router.push("/");
 					}
 
 					setHasErrored(hasErroredNew);

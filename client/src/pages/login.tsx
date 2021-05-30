@@ -1,8 +1,9 @@
 import React, { FC, useState } from "react";
 import { useRouter } from "next/router";
+import NextLink from "next/link";
 import { withUrqlClient } from "next-urql";
 import { Form, Formik } from "formik";
-import { Alert, AlertIcon, AlertTitle, Button, Stack } from "@chakra-ui/react";
+import { Alert, AlertIcon, AlertTitle, Button, Link, Stack } from "@chakra-ui/react";
 
 import { Wrapper } from "../components/Wrapper";
 import { InputField } from "../components/InputField";
@@ -26,7 +27,7 @@ const Login: FC<LoginProps> = () => {
 	return (
 		<Wrapper variant="small">
 			<Formik
-				initialValues={{ emailOrUsername: "", password: "" }}
+				initialValues={{ emailOrUsername: (router.query["emailOrUsername"] as string) ?? "", password: "" }}
 				onSubmit={async (values): Promise<void> => {
 					const { delayIfNotEnoughTimePassedFromStartAsync } = createDelayer();
 
@@ -37,13 +38,13 @@ const Login: FC<LoginProps> = () => {
 						const minDelayFromStartMs: number = 500;
 						await delayIfNotEnoughTimePassedFromStartAsync(minDelayFromStartMs);
 
-						router.push("/");
+						await router.push("/");
 					}
 
 					setHasErrored(hasErroredNew);
 				}}
 			>
-				{({ isSubmitting }) => (
+				{({ isSubmitting, values: { emailOrUsername } }) => (
 					<Form>
 						<Stack spacing={6}>
 							<InputField
@@ -67,6 +68,14 @@ const Login: FC<LoginProps> = () => {
 									<AlertIcon /> <AlertTitle>Something's going on here..</AlertTitle>
 								</Alert>
 							) : null}
+
+							<NextLink
+								href={
+									`/reset-password` + (!emailOrUsername ? "" : "?emailOrUsername=" + emailOrUsername)
+								}
+							>
+								<Link ml="auto">Reset Password?</Link>
+							</NextLink>
 
 							<Button
 								type="submit"
