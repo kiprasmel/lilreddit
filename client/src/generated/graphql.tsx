@@ -24,7 +24,8 @@ export type Mutation = {
 	registerUser?: Maybe<User>;
 	loginUser?: Maybe<User>;
 	logoutUser: Scalars["Boolean"];
-	resetPassword: Scalars["Boolean"];
+	initiatePasswordReset: Scalars["Boolean"];
+	changePassword?: Maybe<User>;
 };
 
 export type MutationCreatePostArgs = {
@@ -53,6 +54,15 @@ export type MutationRegisterUserArgs = {
 export type MutationLoginUserArgs = {
 	password: Scalars["String"];
 	emailOrUsername: Scalars["String"];
+};
+
+export type MutationInitiatePasswordResetArgs = {
+	emailOrUsername: Scalars["String"];
+};
+
+export type MutationChangePasswordArgs = {
+	token: Scalars["String"];
+	newPassword: Scalars["String"];
 };
 
 export type Post = {
@@ -86,6 +96,21 @@ export type User = {
 };
 
 export type BaseUserFragment = { __typename?: "User" } & Pick<User, "id" | "username" | "createdAt">;
+
+export type ChangePasswordMutationVariables = Exact<{
+	newPassword: Scalars["String"];
+	token: Scalars["String"];
+}>;
+
+export type ChangePasswordMutation = { __typename?: "Mutation" } & {
+	changePassword?: Maybe<{ __typename?: "User" } & Pick<User, "id" | "email" | "username" | "updatedAt">>;
+};
+
+export type InitiatePasswordResetMutationVariables = Exact<{
+	emailOrUsername: Scalars["String"];
+}>;
+
+export type InitiatePasswordResetMutation = { __typename?: "Mutation" } & Pick<Mutation, "initiatePasswordReset">;
 
 export type LoginMutationVariables = Exact<{
 	emailOrUsername: Scalars["String"];
@@ -127,6 +152,31 @@ export const BaseUserFragmentDoc = gql`
 		createdAt
 	}
 `;
+export const ChangePasswordDocument = gql`
+	mutation ChangePassword($newPassword: String!, $token: String!) {
+		changePassword(newPassword: $newPassword, token: $token) {
+			id
+			email
+			username
+			updatedAt
+		}
+	}
+`;
+
+export function useChangePasswordMutation() {
+	return Urql.useMutation<ChangePasswordMutation, ChangePasswordMutationVariables>(ChangePasswordDocument);
+}
+export const InitiatePasswordResetDocument = gql`
+	mutation InitiatePasswordReset($emailOrUsername: String!) {
+		initiatePasswordReset(emailOrUsername: $emailOrUsername)
+	}
+`;
+
+export function useInitiatePasswordResetMutation() {
+	return Urql.useMutation<InitiatePasswordResetMutation, InitiatePasswordResetMutationVariables>(
+		InitiatePasswordResetDocument
+	);
+}
 export const LoginDocument = gql`
 	mutation Login($emailOrUsername: String!, $password: String!) {
 		loginUser(emailOrUsername: $emailOrUsername, password: $password) {

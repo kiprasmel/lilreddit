@@ -1,50 +1,50 @@
 import React, { FC, useState } from "react";
-import { useRouter } from "next/router";
-import NextLink from "next/link";
 import { withUrqlClient } from "next-urql";
-import { Form, Formik } from "formik";
-import { Alert, AlertIcon, AlertTitle, Button, Link, Stack } from "@chakra-ui/react";
+import { useRouter } from "next/router";
+import { Stack, Alert, AlertIcon, AlertTitle, Button } from "@chakra-ui/react";
+import { Formik, Form } from "formik";
 
-import { Wrapper } from "../components/Wrapper";
+import { useInitiatePasswordResetMutation } from "../generated/graphql";
 import { InputField } from "../components/InputField";
-import { useLoginMutation } from "../generated/graphql";
+import { Wrapper } from "../components/Wrapper";
 import { createDelayer } from "../utils/time";
 import { createUrqlClient } from "../utils/createUrqlClient";
 
-interface LoginProps {}
+interface ResetPasswordProps {}
 
-const Login: FC<LoginProps> = () => {
-	const [, login] = useLoginMutation();
-
+const ResetPassword: FC<ResetPasswordProps> = ({}) => {
 	const router = useRouter();
+
+	const [, initiatePasswordReset] = useInitiatePasswordResetMutation();
 
 	/**
 	 * custom global errors because apparently
 	 * formik doesn't have that lmao
 	 */
 	const [hasErrored, setHasErrored] = useState(false);
+	const [hasSuccessfullyInitiatedAReset, setHasSuccessfullyInitiatedAReset] = useState<boolean>(false);
 
 	return (
 		<Wrapper variant="small">
 			<Formik
-				initialValues={{ emailOrUsername: (router.query["emailOrUsername"] as string) ?? "", password: "" }}
+				initialValues={{ emailOrUsername: (router.query["emailOrUsername"] as string) ?? "" }}
 				onSubmit={async (values): Promise<void> => {
 					const { delayIfNotEnoughTimePassedFromStartAsync } = createDelayer();
 
-					const res = await login(values);
-					const hasErroredNew = !res.data?.loginUser;
+					const res = await initiatePasswordReset(values);
+					const hasErroredNew = !res.data?.initiatePasswordReset;
 
 					if (!hasErroredNew) {
 						const minDelayFromStartMs: number = 500;
 						await delayIfNotEnoughTimePassedFromStartAsync(minDelayFromStartMs);
 
-						await router.push("/");
+						setHasSuccessfullyInitiatedAReset(true);
 					}
 
 					setHasErrored(hasErroredNew);
 				}}
 			>
-				{({ isSubmitting, values: { emailOrUsername } }) => (
+				{({ isSubmitting }) => (
 					<Form>
 						<Stack spacing={6}>
 							<InputField
@@ -56,12 +56,6 @@ const Login: FC<LoginProps> = () => {
 								 */
 								onChangeCapture={() => setHasErrored(false)}
 							/>
-							<InputField
-								name="password" //
-								label="Password"
-								type="password"
-								onChangeCapture={() => setHasErrored(false)}
-							/>
 
 							{hasErrored ? (
 								<Alert status="error" verticalAlign="baseline">
@@ -69,23 +63,21 @@ const Login: FC<LoginProps> = () => {
 								</Alert>
 							) : null}
 
-							<NextLink
-								href={
-									`/reset-password` + (!emailOrUsername ? "" : "?emailOrUsername=" + emailOrUsername)
-								}
-							>
-								<Link>Reset Password?</Link>
-							</NextLink>
+							{hasSuccessfullyInitiatedAReset ? (
+								<Alert status="success" verticalAlign="baseline">
+									<AlertIcon /> <AlertTitle>Check Your Email.</AlertTitle>
+								</Alert>
+							) : null}
 
 							<Button
 								type="submit"
 								colorScheme="teal"
 								isLoading={isSubmitting}
-								disabled={hasErrored}
+								disabled={hasErrored || hasSuccessfullyInitiatedAReset}
 								size="lg"
 								marginLeft="auto"
 							>
-								Login
+								Reset Password
 							</Button>
 						</Stack>
 					</Form>
@@ -95,4 +87,4 @@ const Login: FC<LoginProps> = () => {
 	);
 };
 
-export default withUrqlClient(createUrqlClient)(Login);
+export default withUrqlClient(createUrqlClient)(ResetPassword);

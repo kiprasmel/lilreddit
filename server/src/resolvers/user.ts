@@ -1,11 +1,12 @@
 import argon2 from "argon2";
 import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
+import { v4 as uuidv4 } from "uuid";
 
 import { sendEmail } from "../utils/sendEmail";
 
 // eslint-disable-next-line import/no-cycle
 import { MyContext, Req } from "..";
-import { Cookies } from "../constants";
+import { Cookies, Redis } from "../constants";
 import { User } from "../entities/User";
 
 /**
@@ -18,6 +19,11 @@ const logUserIn = (reqRef: Req, userId: number): void => {
 	reqRef.session.userId = userId;
 	reqRef.session.loginTime = new Date().getTime();
 	reqRef.session.loginIp = reqRef.ip;
+};
+
+const hashRawPasswordAsync = async (rawPassword: string): Promise<string> => {
+	const oneWayHashedAndSaltedPassword: string = await argon2.hash(rawPassword);
+	return oneWayHashedAndSaltedPassword;
 };
 
 @Resolver()
@@ -47,7 +53,7 @@ export class UserResolver {
 
 			// https://github.com/ranisalt/node-argon2
 			// https://github.com/ranisalt/node-argon2/wiki/Options
-			const oneWayHashedAndSaltedPassword: string = await argon2.hash(rawPassword);
+			const oneWayHashedAndSaltedPassword: string = await hashRawPasswordAsync(rawPassword);
 
 			/**
 			 * example on how to use a query builder,
@@ -141,25 +147,79 @@ export class UserResolver {
 	}
 
 	@Mutation(() => Boolean)
-	async resetPassword(@Arg("emailOrUsername") emailOrUsername: string, @Ctx() { em }: MyContext) {
+	async initiatePasswordReset(
+		@Arg("emailOrUsername") emailOrUsername: string,
+		@Ctx() { req, em, redis }: MyContext
+	): Promise<boolean> {
 		const user = await em.findOne(User, { $or: [{ email: emailOrUsername }, { username: emailOrUsername }] });
 
 		if (!user) {
-			/** security - always return true anyway */
-			return true;
+			/**
+			 * todo security - at least rate limiting etc
+			 *
+			 * currently it's very clear if there was a success or failure anyway
+			 * since it takes a while to send that email lol
+			 */
+			return false;
 		}
 
-		const token: string = "TODO-actual-token";
+		const token: string = uuidv4();
 
-		const resetLink: string = `http://localhost:3000/reset-password/${token}`;
+		const howManyMinutesTillExpiration: number = 30;
+		const expiresInMs: number = 1000 * 60 * howManyMinutesTillExpiration;
+		const expirationTimeUnix: number = new Date().getTime() + expiresInMs;
 
-		sendEmail({
+		const changePasswordPage: string = `http://localhost:3000/change-password/${token}/${expirationTimeUnix}?emailOrUsername=${emailOrUsername}`;
+
+		// https://redis.io/commands/set
+		await redis.set(
+			Redis.ResetPasswordTokenKey(token), //
+			[user.id, req.ip].join(Redis.ValueSeparator),
+			"PX",
+			expiresInMs
+		);
+
+		await sendEmail({
 			to: user.email,
-			text: resetLink,
-			html: `<a href="${resetLink}">Reset Password</a>`,
+			text: `${changePasswordPage} \n\nWill expire in ${howManyMinutesTillExpiration} minutes.`,
+			html: `<a href="${changePasswordPage}">Reset Password</a> (will expire in ${howManyMinutesTillExpiration} minutes)`,
 		});
 
 		return true;
+	}
+
+	@Mutation(() => User, { nullable: true })
+	async changePassword(
+		@Arg("newPassword") newRawPassword: string,
+		@Arg("token") token: string,
+		@Ctx() { req, redis, em }: MyContext
+	): Promise<User | null> {
+		const value = await redis.get(Redis.ResetPasswordTokenKey(token));
+
+		if (!value) {
+			// invalid or expired
+			return null;
+		}
+
+		const [userId_, reqIp] = value.split(Redis.ValueSeparator);
+		const userId: number = Number(userId_);
+
+		if (req.ip !== reqIp) {
+			return null;
+		}
+
+		const user = await em.findOne(User, { id: userId });
+
+		if (!user) {
+			return null;
+		}
+
+		user.password = await hashRawPasswordAsync(newRawPassword);
+		await em.persistAndFlush(user);
+
+		await redis.del(Redis.ResetPasswordTokenKey(token));
+
+		return user;
 	}
 
 	@Query(() => [User])
