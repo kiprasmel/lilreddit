@@ -1,7 +1,7 @@
 import argon2 from "argon2";
 import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
-import jwt from "jsonwebtoken";
 
+import { jwt, SignOptions } from "../utils/jwt";
 import { sendEmail } from "../utils/sendEmail";
 // eslint-disable-next-line import/no-cycle
 import { MyContext, Req } from "..";
@@ -174,7 +174,7 @@ export class UserResolver {
 			expirationTimeUnix: expirationTimeUnix,
 		};
 
-		const jwtOptions: jwt.SignOptions = {
+		const jwtOptions: SignOptions = {
 			algorithm: "HS512",
 			/**
 			 * do not use the built-in `expiresIn` method
@@ -191,7 +191,7 @@ export class UserResolver {
 			 */
 		};
 
-		const signedJwtToken: string = jwt.sign(tokenPayload, JWTSecret, jwtOptions);
+		const signedJwtToken: string = await jwt.sign(tokenPayload, JWTSecret, jwtOptions);
 
 		const changePasswordPage: string = `http://localhost:3000/change-password?token=${signedJwtToken}`;
 
@@ -229,8 +229,8 @@ export class UserResolver {
 
 		let jwtTokenPayload: JWTTokenPayload;
 		try {
-			jwtTokenPayload = jwt.verify(token, JWTSecret) as JWTTokenPayload;
-		} catch (e) {
+			jwtTokenPayload = await jwt.verify(token, JWTSecret);
+		} catch (_e) {
 			return null;
 		}
 

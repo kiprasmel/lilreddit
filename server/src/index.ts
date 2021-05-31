@@ -6,7 +6,6 @@ import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import cors from "cors";
-import jwt from "jsonwebtoken";
 
 import mikroOrmConfig from "./mikro-orm.config";
 import { Post } from "./entities/Post";
@@ -18,6 +17,7 @@ import { UserResolver } from "./resolvers/user";
 import { IsTokenValidResponse, JWTTokenPayload, UnwrapPromise } from "./types";
 import { Cookies, JWTSecret, __DEV__ } from "./constants";
 import { sendEmail } from "./utils/sendEmail";
+import { jwt } from "./utils/jwt";
 
 export type ExpressSession = Partial<{
 	userId: number;
@@ -136,7 +136,7 @@ const main = async () => {
 	 * hooks wouldn't work and you'd need to initiate a separate client etc etc,
 	 * thus we're creating an endpoint here.
 	 */
-	app.get("/is-token-valid/of-password-reset/:token", (req, res) => {
+	app.get("/is-token-valid/of-password-reset/:token", async (req, res) => {
 		const { token } = req.params;
 
 		const send = (code: number, data: IsTokenValidResponse): void => {
@@ -154,30 +154,29 @@ const main = async () => {
 			return;
 		}
 
-		jwt.verify(token, JWTSecret, (err, verified_) => {
-			if (err) {
-				send(200, {
-					valid: false,
-					reason: "Token is not valid",
-					isExpiredAtTimeOfValidation: null,
-					tokenPayload: null,
-				});
+		try {
+			const verifiedTokenPayload: JWTTokenPayload = await jwt.verify(token, JWTSecret);
 
-				return;
-			}
-
-			const verified: JWTTokenPayload = verified_ as JWTTokenPayload;
-			const isExpiredAtTimeOfValidation: boolean = Date.now() > verified.expirationTimeUnix;
+			const isExpiredAtTimeOfValidation: boolean = Date.now() > verifiedTokenPayload.expirationTimeUnix;
 
 			send(200, {
 				valid: true,
 				reason: "Token is valid",
 				isExpiredAtTimeOfValidation: isExpiredAtTimeOfValidation,
-				tokenPayload: verified,
+				tokenPayload: verifiedTokenPayload,
 			});
 
 			return;
-		});
+		} catch (_e) {
+			send(200, {
+				valid: false,
+				reason: "Token is not valid",
+				isExpiredAtTimeOfValidation: null,
+				tokenPayload: null,
+			});
+
+			return;
+		}
 	});
 
 	app.listen(port, () => {
