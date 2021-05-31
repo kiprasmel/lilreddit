@@ -234,9 +234,12 @@ export class UserResolver {
 			return null;
 		}
 
-		const { reqIp } = jwtTokenPayload;
-
-		if (req.ip !== reqIp) {
+		if (req.ip !== jwtTokenPayload.reqIp) {
+			// make it harder to utilize a hijacked token
+			return null;
+		}
+		if (userId !== jwtTokenPayload.userId) {
+			// should be impossible but hey
 			return null;
 		}
 
